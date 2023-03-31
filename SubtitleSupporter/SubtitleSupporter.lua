@@ -15,6 +15,13 @@ script_version = "0.4"
 
 
 function runWhisperApi(subtitles)
+
+	local videoPath = aegisub.project_properties().video_file
+	if videoPath == nil or videoPath == "" then 
+		aegisub.debug.out("please open a video first\n")
+		return
+	end
+
 	--choose model
 	local model = "whisper-1"
 	local button, controls = aegisub.dialog.display({
@@ -32,7 +39,7 @@ function runWhisperApi(subtitles)
 		end
 	end
 
-	local videoPath = aegisub.project_properties().video_file
+	
 	local isError = false
 	--call api
 	local fh= io.popen(".\\automation\\SubtitleSupporter\\SubtitleSupporter.exe -h WhisperApi -m "..model.." -f \""..videoPath.."\"")
@@ -74,6 +81,14 @@ end
 
 
 function runWhisperLocal(subtitles)
+
+	local videoPath = aegisub.project_properties().video_file
+	--aegisub.debug.out(videoPath.."\n")
+	if videoPath == nil or videoPath == "" then 
+		aegisub.debug.out("please open a video first\n")
+		return
+	end
+
 	--choose model
 	local model = "medium"
 	local button, controls = aegisub.dialog.display({
@@ -91,8 +106,7 @@ function runWhisperLocal(subtitles)
 		end
 	end
 
-	local videoPath = aegisub.project_properties().video_file
-	--aegisub.debug.out(videoPath.."\n")
+	
 	local isError = false
 	--call api
 	local fh= io.popen(".\\automation\\SubtitleSupporter\\SubtitleSupporter.exe -h WhisperLocal -m "..model.." -f \""..videoPath.."\"")
@@ -135,6 +149,14 @@ function runCurrentSub(subtitles)
 	--choose model
 	local coor = "10,10,20,20"
 	local confidence = "0.05"
+
+	local videoPath = aegisub.project_properties().video_file
+	if videoPath == nil or videoPath == "" then 
+		aegisub.debug.out("please open a video first\n")
+		return
+	end
+
+
 	local button, controls = aegisub.dialog.display({
 		{class="label", label="please input current subtitle coordinate", x=0, y=0},
 		{class="label", label="in format x1,y1,x2,y2 where x1,y1 are for top-left corner and x2,y2 are for bottom-right corner", x=0, y=1},
@@ -156,7 +178,7 @@ function runCurrentSub(subtitles)
 		end
 	end
 
-	local videoPath = aegisub.project_properties().video_file
+	
 	local isError = false
 	--call api
 	local fh, error= io.popen(".\\automation\\SubtitleSupporter\\SubtitleSupporter.exe -h CurrentSub -f \""..videoPath.."\" -coor "..coor.." -conf "..confidence)
@@ -203,6 +225,11 @@ end
 
 function runCombine()
 	local videoPath = aegisub.project_properties().video_file
+	if videoPath == nil or videoPath == "" then 
+		aegisub.debug.out("please open a video first\n")
+		return
+	end
+
 	local filePath = aegisub.dialog.open("please select an ass file","","","ass files (.ass)|*.ass", false, true)
 	if filePath == nil then 
 		return

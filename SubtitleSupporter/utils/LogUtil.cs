@@ -39,10 +39,18 @@ namespace SubtitleSupporter.utils
         /// </summary>
         private LogUtil()
         {
-            this.logFilePath = Path.Combine(Program.currentFolderPath, CommonUtils.GetConfig("Log.fileName"));
+            try
+            {
+                this.logFilePath = Path.Combine(Program.currentFolderPath, CommonUtils.GetConfig("Log.fileName"));
 
-            // ログファイルを生成する
-            CreateLogfile(new FileInfo(logFilePath));
+                // ログファイルを生成する
+                CreateLogfile(new FileInfo(logFilePath));
+            }
+            catch (Exception) 
+            { 
+            // do nothing
+            }
+            
         }
 
         /// <summary>
@@ -52,7 +60,7 @@ namespace SubtitleSupporter.utils
         public void Error(string msg)
         {
             LogLevel logLevel;
-            if(Enum.TryParse(CommonUtils.GetConfig("Log.level"), out logLevel))
+            if(Enum.TryParse(CommonUtils.GetConfig("Log.level").ToUpper(), out logLevel))
             {
                 if ((int)LogLevel.ERROR <= (int)logLevel)
                 {
@@ -68,7 +76,7 @@ namespace SubtitleSupporter.utils
         public void Error(Exception ex)
         {
             LogLevel logLevel;
-            if (Enum.TryParse(CommonUtils.GetConfig("Log.level"), out logLevel))
+            if (Enum.TryParse(CommonUtils.GetConfig("Log.level").ToUpper(), out logLevel))
             {
                 if ((int)LogLevel.ERROR <= (int)logLevel)
                 {
@@ -84,7 +92,7 @@ namespace SubtitleSupporter.utils
         public void Warn(string msg)
         {
             LogLevel logLevel;
-            if (Enum.TryParse(CommonUtils.GetConfig("Log.level"), out logLevel))
+            if (Enum.TryParse(CommonUtils.GetConfig("Log.level").ToUpper(), out logLevel))
             {
                 if ((int)LogLevel.WARN <= (int)logLevel)
                 {
@@ -100,7 +108,7 @@ namespace SubtitleSupporter.utils
         public void Info(string msg)
         {
             LogLevel logLevel;
-            if (Enum.TryParse(CommonUtils.GetConfig("Log.level"), out logLevel))
+            if (Enum.TryParse(CommonUtils.GetConfig("Log.level").ToUpper(), out logLevel))
             {
                 if ((int)LogLevel.INFO <= (int)logLevel)
                 {
@@ -116,7 +124,7 @@ namespace SubtitleSupporter.utils
         public void Debug(string msg)
         {
             LogLevel logLevel;
-            if (Enum.TryParse(CommonUtils.GetConfig("Log.level"), out logLevel))
+            if (Enum.TryParse(CommonUtils.GetConfig("Log.level").ToUpper(), out logLevel))
             {
                 if ((int)LogLevel.DEBUG <= (int)logLevel)
                 {
@@ -132,28 +140,35 @@ namespace SubtitleSupporter.utils
         /// <param name="msg">メッセージ</param>
         private void Out(LogLevel level, string msg)
         {
-            if (CommonUtils.GetConfig("Log").ToLower().Equals("true"))
+            try
             {
-                int tid = System.Threading.Thread.CurrentThread.ManagedThreadId;
-                string fullMsg = string.Format("[{0}][{1}][{2}] {3}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"), tid, level.ToString(), msg);
-
-                lock (this.lockObj)
+                if (CommonUtils.GetConfig("Log").ToLower().Equals("true"))
                 {
-                    this.stream.WriteLine(fullMsg);
+                    int tid = System.Threading.Thread.CurrentThread.ManagedThreadId;
+                    string fullMsg = string.Format("[{0}][{1}][{2}] {3}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"), tid, level.ToString(), msg);
 
-                    long maxSize = 10485760;
-                    long.TryParse(CommonUtils.GetConfig("Log.maxSize"), out maxSize);
-                    FileInfo logFile = new FileInfo(this.logFilePath);
-                    if (maxSize < logFile.Length)
+                    lock (this.lockObj)
                     {
-                        // ログファイルを圧縮する
-                        CompressLogFile();
+                        this.stream.WriteLine(fullMsg);
 
-                        // 古いログファイルを削除する
-                        DeleteOldLogFile();
+                        long maxSize = 10485760;
+                        long.TryParse(CommonUtils.GetConfig("Log.maxSize"), out maxSize);
+                        FileInfo logFile = new FileInfo(this.logFilePath);
+                        if (maxSize < logFile.Length)
+                        {
+                            // ログファイルを圧縮する
+                            CompressLogFile();
+
+                            // 古いログファイルを削除する
+                            DeleteOldLogFile();
+                        }
                     }
                 }
+            } catch(Exception)
+            {
+                //do nothing
             }
+            
         }
 
         /// <summary>

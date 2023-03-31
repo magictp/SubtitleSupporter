@@ -20,7 +20,7 @@ namespace SubtitleSupporter.handler
                 VideoUtils.combineVideoWithAss(videoFilePath, assFilePath, outputFilePath, isQsvAccel);
 
                 //check if combine succeed
-                if (CommonUtils.CheckFile(outputFilePath))
+                if (!CommonUtils.CheckFile(outputFilePath))
                 {
                     result.errorMsg = "combine video with subtitle failed!";
                     LogUtil.GetInstance().Error(result.errorMsg);

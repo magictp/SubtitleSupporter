@@ -1,0 +1,8 @@
+﻿V0.6 
+fix bug
+1. if aegisub is in program files folder and started without administrator permission, create log file will fail.
+2. combine succeed with error msg
+
+remove debug parameter
+
+V0.5 init version

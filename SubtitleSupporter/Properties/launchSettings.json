@@ -1,8 +1,7 @@
 {
   "profiles": {
     "SubtitleSupporter": {
-      "commandName": "Project",
-      "commandLineArgs": "-xxxx aaada"
+      "commandName": "Project"
     }
   }
 }
