@@ -13,6 +13,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="SubtitleSupporter.lua">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="SubtitleSuppoter.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
