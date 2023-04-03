@@ -43,6 +43,9 @@ class Program
         var qsvAccelOption = new Option<bool>("--qsvAccel", () => false, "If qsv accel will be used, default is false");
         qsvAccelOption.AddAlias("-qsv");
 
+        var localOCROption = new Option<bool>("--localOCR", () => false, "If run local ocr, default is false");
+        localOCROption.AddAlias("-locr");
+
         rootCommand.Add(handlerOption);
         rootCommand.Add(fileOption);
         rootCommand.Add(modelOption);
@@ -51,30 +54,31 @@ class Program
         rootCommand.Add(subtitleOption);
         rootCommand.Add(qsvAccelOption);
         rootCommand.Add(coorOption);
+        rootCommand.Add(localOCROption);
 
-        rootCommand.SetHandler((handlerOptionValue, fileOptionValue, modelOptionValue, confidenceOptionValue, outputFilePathOptionValue, subtitleOptionValue, qsvAccelOptionValue, coorOptionValue) =>
+        rootCommand.SetHandler((handlerOptionValue, parameter) =>
         {
             ResultModel result = new ResultModel();
             switch(handlerOptionValue)
             {
                 case "WhisperLocal":
-                    result = new WhisperLocalHandler().handler(fileOptionValue, modelOptionValue);
+                    result = new WhisperLocalHandler().handler(parameter.file, parameter.model);
                     CommonUtils.PrintSubtitle(result);
                     break;
                 case "WhisperApi":
-                    result = new WhisperApiHandler().handler(fileOptionValue, modelOptionValue);
+                    result = new WhisperApiHandler().handler(parameter.file, parameter.model);
                     CommonUtils.PrintSubtitle(result);
                     break;
                 case "N46Whisper":
                     break;
                 case "CurrentSub":
-                    result = new CurrentSubHandler().handler(fileOptionValue, coorOptionValue, confidenceOptionValue);
+                    result = new CurrentSubHandler().handler(parameter.file, parameter.coor, parameter.confidence, parameter.localOCR);
                     CommonUtils.PrintSubtitle(result);
                     break;
                 case "EasyOCR":
                     break;
                 case "Combine":
-                    result = new CombineHandler().handler(fileOptionValue, subtitleOptionValue, qsvAccelOptionValue);
+                    result = new CombineHandler().handler(parameter.file, parameter.model, parameter.qsvAccel);
                     if (!string.IsNullOrEmpty(result.errorMsg))
                     {
                         Console.WriteLine("ERROR: " + result.errorMsg);
@@ -92,7 +96,7 @@ class Program
             Console.ReadKey();
 #endif
 
-        }, handlerOption, fileOption, modelOption, confidenceOption, outputFilePathOption, subtitleOption, qsvAccelOption, coorOption);
+        }, handlerOption, new ParameterBinder(fileOption, modelOption, coorOption, confidenceOption, outputFilePathOption, subtitleOption, qsvAccelOption,localOCROption));
 
         await rootCommand.InvokeAsync(args);
         

@@ -3,6 +3,7 @@ using SubtitleSupporter.utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -10,7 +11,7 @@ namespace SubtitleSupporter.handler
 {
     internal class CurrentSubHandler
     {
-        internal ResultModel handler(string filePath, string coor, double confidence)
+        internal ResultModel handler(string filePath, string coor, double confidence, bool localOCR)
         {
             string tmpFolder = "";
             ResultModel result = new ResultModel();
@@ -119,9 +120,42 @@ namespace SubtitleSupporter.handler
                         LogUtil.GetInstance().Error(ex);
                         return result;
                     }
+                    result.subtitleResult = subtitleResult;
 
+                    if (localOCR)
+                    {
+                        List<SubtitleModel> ocrSubtitleResult = new List<SubtitleModel>();
+                        string pyPath = Path.Combine(Program.currentFolderPath, "ocrImageInFolder.py");
+                        string command = "\"{0}\" -f \"{1}\"";
+                        string parameter = string.Format(command, pyPath, tmpFolder);
+                        List<String> ocrResult = CommonUtils.LaunchCommandLineApp("python", parameter, true);
+                        for (int i = 0; i < subtitleResult.Count; i++)
+                        {
+                            String res = ocrResult[i].Substring(1, ocrResult[i].Length - 2);
+                            subtitleResult[i].text = res.Replace("'", "").Replace(" ", "");
+                        }
+                        SubtitleModel sm = subtitleResult[0];
+                        for (int i = 1; i < subtitleResult.Count; i++)
+                        {
+
+                            if (CommonUtils.isNewSubtitle(subtitleResult[i - 1].text, subtitleResult[i].text, 0.7))
+                            {
+                                if (subtitleResult[i - 1].text != "")
+                                {
+                                    ocrSubtitleResult.Add(sm);
+                                }
+                                sm = subtitleResult[i];
+                            }
+                            else
+                            {
+                                double startTime = sm.startTime;
+                                sm = subtitleResult[i];
+                               sm.startTime = startTime;
+                            }
+                        }
+                        result.subtitleResult = ocrSubtitleResult;
+                    }
                 }
-                result.subtitleResult = subtitleResult;
                 return result;
             }
             catch (Exception ex)

@@ -1,4 +1,8 @@
-﻿V0.6 
+﻿V0.7
+add local easyOCR support
+rewrite parameter handler 
+
+V0.6 
 fix bug
 1. if aegisub is in program files folder and started without administrator permission, create log file will fail.
 2. combine succeed with error msg

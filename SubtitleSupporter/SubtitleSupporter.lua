@@ -1,4 +1,5 @@
 ﻿
+-- v0.5 add local easyOCR support
 -- v0.4 add get current subtitle function
 -- v0.3 add run whisper local function
 -- v0.2 add combine video function
@@ -8,7 +9,7 @@
 script_name = "SubtitleSupporter"
 script_description = "call variety AI tools to support handling subtitles"
 script_author = "松田好花花"
-script_version = "0.4"
+script_version = "0.5"
 
 
 
@@ -149,7 +150,7 @@ function runCurrentSub(subtitles)
 	--choose model
 	local coor = "10,10,20,20"
 	local confidence = "0.05"
-
+	local runLocalOCR = false
 	local videoPath = aegisub.project_properties().video_file
 	if videoPath == nil or videoPath == "" then 
 		aegisub.debug.out("please open a video first\n")
@@ -162,7 +163,8 @@ function runCurrentSub(subtitles)
 		{class="label", label="in format x1,y1,x2,y2 where x1,y1 are for top-left corner and x2,y2 are for bottom-right corner", x=0, y=1},
 		{class="textbox", name="coor", value="10,10,20,20", x=0, y=2},
 		{class="label", label="please input confidence between 0 and 1", x=0, y=3},
-		{class="textbox", name="confidence", value="0.05", x=0, y=4}
+		{class="textbox", name="confidence", value="0.05", x=0, y=4},
+		{class="checkbox", name="localOCR", value=false, label='run local easyOCR', x=0, y=5}
 	}, {})
 	if button == false then
 		--aegisub.debug.out("cancelled\n")
@@ -176,12 +178,15 @@ function runCurrentSub(subtitles)
 		if key == "confidence" then
 			confidence = val
 		end
+		if key == "localOCR" then
+			runLocalOCR = val
+		end
 	end
 
 	
 	local isError = false
 	--call api
-	local fh, error= io.popen(".\\automation\\SubtitleSupporter\\SubtitleSupporter.exe -h CurrentSub -f \""..videoPath.."\" -coor "..coor.." -conf "..confidence)
+	local fh, error= io.popen(".\\automation\\SubtitleSupporter\\SubtitleSupporter.exe -h CurrentSub -f \""..videoPath.."\" -coor "..coor.." -conf "..confidence.." -locr "..tostring(runLocalOCR))
 	
 	if fh == nil then
 		aegisub.debug.out(error)
