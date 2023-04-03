@@ -78,7 +78,7 @@ class Program
                 case "EasyOCR":
                     break;
                 case "Combine":
-                    result = new CombineHandler().handler(parameter.file, parameter.model, parameter.qsvAccel);
+                    result = new CombineHandler().handler(parameter.file, parameter.subtitle, parameter.qsvAccel);
                     if (!string.IsNullOrEmpty(result.errorMsg))
                     {
                         Console.WriteLine("ERROR: " + result.errorMsg);
