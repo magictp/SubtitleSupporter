@@ -18,13 +18,21 @@ namespace SubtitleSupporter.utils
         static string ffprobePath = Path.Combine(Program.currentFolderPath, "ffprobe.exe");
 #endif
 
-        internal static string exportAudio(string videoPath)
+        internal static string exportAudio(string videoPath, int startTime, int endTime)
         {
             string folder = Path.GetDirectoryName(videoPath);
             string fileName = Path.GetFileNameWithoutExtension(videoPath);
             string audioFilePath = Path.Combine(folder, fileName + "_" + new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds() + ".mp3");
-
-            string command = "-y -i \"{0}\" -acodec libmp3lame  \"{1}\"";
+            string command = "";
+            if(startTime > 0)
+            {
+                command += " -ss " + (double)startTime / 1000.0;
+            }
+            if(endTime > 0)
+            {
+                command += " -to " + (double)endTime / 1000.0;
+            }
+            command += " -y -i \"{0}\" -acodec libmp3lame  \"{1}\"";
             string parameter = string.Format(command, videoPath, audioFilePath);
             try
             {

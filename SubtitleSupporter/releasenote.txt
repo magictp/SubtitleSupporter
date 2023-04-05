@@ -1,4 +1,8 @@
-﻿V0.7
+﻿V0.8
+add startTime(ss) and endTime(to) parameter to support use selected time to run whisper
+fix a bug that start time and end time are not added with offset when calling whisper api with large file
+
+V0.7
 add local easyOCR support
 rewrite parameter handler 
 

@@ -20,93 +20,86 @@ namespace SubtitleSupporter.handler
         const string CONFIG_KEY = "WhisperApi.key";
         const long WHISPER_LIMIT_SIZE = 25 * 1024 * 1024;
         const int SPLIT_FILE_SIZE_IN_M = 20;
-        internal ResultModel handler(string filePath, string model)
+        internal ResultModel handler(string filePath, string model, int startTime, int endTime)
         {
             ResultModel result = new ResultModel();
 
             try
             {
                 var finfo = new FileInfo(filePath);
-                //check filesize
-                if (finfo.Length >= WHISPER_LIMIT_SIZE)
+                String audioFilePath = VideoUtils.exportAudio(filePath, startTime, endTime);
+
+                if (string.IsNullOrEmpty(audioFilePath) || !CommonUtils.CheckFile(audioFilePath))
                 {
-                    String audioFilePath = VideoUtils.exportAudio(filePath);
+                    result.errorMsg = "export audio failed!";
+                    LogUtil.GetInstance().Error(result.errorMsg);
+                    return result;
+                }
 
-                    if (string.IsNullOrEmpty(audioFilePath) || !CommonUtils.CheckFile(audioFilePath))
+                //if audio file still larger than limit size, split it
+                if (new FileInfo(audioFilePath).Length >= WHISPER_LIMIT_SIZE)
+                {
+                    Dictionary<string, double> splittedFiles = VideoUtils.splitFile(audioFilePath, SPLIT_FILE_SIZE_IN_M);
+
+                    foreach (KeyValuePair<string, double> pair in splittedFiles)
                     {
-                        result.errorMsg = "export audio failed!";
-                        LogUtil.GetInstance().Error(result.errorMsg);
-                        return result;
+                        //call whisper api by each file with time offset
+                        ResultModel tmpResult = callWhisperApi(pair.Key, model, pair.Value + (double)startTime / 1000.0);
+                        if (!string.IsNullOrEmpty(tmpResult.errorMsg))
+                        {
+                            LogUtil.GetInstance().Error("call whisper api failed with file: " + pair.Key);
+                            LogUtil.GetInstance().Error(tmpResult.errorMsg);
+                            result.errorMsg = tmpResult.errorMsg;
+                            break;
+                        }
+                        result.subtitleResult.AddRange(tmpResult.subtitleResult);
                     }
-
-                    //if audio file still larger than limit size, split it
-                    if (new FileInfo(audioFilePath).Length >= WHISPER_LIMIT_SIZE)
-                    {
-                        Dictionary<string, double> splittedFiles = VideoUtils.splitFile(audioFilePath, SPLIT_FILE_SIZE_IN_M);
-
-                        foreach (KeyValuePair<string, double> pair in splittedFiles)
-                        {
-                            //call whisper api by each file with time offset
-                            ResultModel tmpResult = callWhisperApi(pair.Key, model, pair.Value);
-                            if (!string.IsNullOrEmpty(tmpResult.errorMsg))
-                            {
-                                LogUtil.GetInstance().Error("call whisper api failed with file: " + pair.Key);
-                                LogUtil.GetInstance().Error(tmpResult.errorMsg);
-                                result.errorMsg = tmpResult.errorMsg;
-                                break;
-                            }
-                            result.subtitleResult.AddRange(tmpResult.subtitleResult);
-                        }
 #if RELEASE
-                        foreach (KeyValuePair<string, double> pair in splittedFiles)
-                        {
-                            try
-                            {
-                                File.Delete(pair.Key);
-                            }
-                            catch (Exception ex)
-                            {
-                                LogUtil.GetInstance().Warn("Delete file failed. " + ex.Message);
-                            }
-                            
-                        }
+                    foreach (KeyValuePair<string, double> pair in splittedFiles)
+                    {
                         try
                         {
-                            File.Delete(audioFilePath);
+                            File.Delete(pair.Key);
                         }
                         catch (Exception ex)
                         {
                             LogUtil.GetInstance().Warn("Delete file failed. " + ex.Message);
                         }
-#endif
+
                     }
-                    else
+                    try
                     {
-                        result = callWhisperApi(audioFilePath, model, 0.0);
-#if RELEASE
-                        try
-                        {
-                            File.Delete(audioFilePath);
-                        }
-                        catch (Exception ex)
-                        {
-                            LogUtil.GetInstance().Warn("Delete file failed. " + ex.Message);
-                        }
-#endif
+                        File.Delete(audioFilePath);
                     }
+                    catch (Exception ex)
+                    {
+                        LogUtil.GetInstance().Warn("Delete file failed. " + ex.Message);
+                    }
+#endif
                 }
                 else
                 {
-                    result = callWhisperApi(filePath, model, 0.0);
+                    result = callWhisperApi(audioFilePath, model, (double)startTime / 1000.0);
+#if RELEASE
+                    try
+                    {
+                        File.Delete(audioFilePath);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogUtil.GetInstance().Warn("Delete file failed. " + ex.Message);
+                    }
+#endif
                 }
-            }catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 LogUtil.GetInstance().Error("call whisper api failed");
                 LogUtil.GetInstance().Error(ex);
             }
-            
+
             return result;
-        } 
+        }
         private ResultModel callWhisperApi(string filePath, string model, double offset)
         {
             ResultModel result = new ResultModel();
@@ -160,7 +153,7 @@ namespace SubtitleSupporter.handler
             }
 
             //parse json
-            result.subtitleResult = CommonUtils.ParseWhisperJson(response.resultString);
+            result.subtitleResult = CommonUtils.ParseWhisperJson(response.resultString, offset);
             return result;
         }
     }

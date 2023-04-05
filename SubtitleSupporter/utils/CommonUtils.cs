@@ -174,15 +174,15 @@ namespace SubtitleSupporter.utils
             }
         }
 
-        internal static List<SubtitleModel> ParseWhisperJson(string jsonString)
+        internal static List<SubtitleModel> ParseWhisperJson(string jsonString, double offset)
         {
             List<Dictionary<string, object>> segments = ((JArray)JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonString)["segments"]).ToObject<List<Dictionary<string, object>>>();
             List<SubtitleModel> subtitleResult = new List<SubtitleModel>();
             foreach (Dictionary<string, object> segment in segments)
             {
                 SubtitleModel subtitle = new SubtitleModel();
-                subtitle.startTime = (double)segment["start"];
-                subtitle.endTime = (double)segment["end"];
+                subtitle.startTime = (double)segment["start"] + offset;
+                subtitle.endTime = (double)segment["end"] + offset;
                 subtitle.text = (string)segment["text"];
                 subtitleResult.Add(subtitle);
             }

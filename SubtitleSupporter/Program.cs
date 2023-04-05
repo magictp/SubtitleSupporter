@@ -46,6 +46,12 @@ class Program
         var localOCROption = new Option<bool>("--localOCR", () => false, "If run local ocr, default is false");
         localOCROption.AddAlias("-locr");
 
+        var startTimeOption = new Option<int>("--startTime", () => 0, "Start time for cropping video");
+        startTimeOption.AddAlias("-ss");
+
+        var endTimeOption = new Option<int>("--endTime", () => 0, "End time for cropping video");
+        endTimeOption.AddAlias("-to");
+
         rootCommand.Add(handlerOption);
         rootCommand.Add(fileOption);
         rootCommand.Add(modelOption);
@@ -55,6 +61,8 @@ class Program
         rootCommand.Add(qsvAccelOption);
         rootCommand.Add(coorOption);
         rootCommand.Add(localOCROption);
+        rootCommand.Add(startTimeOption);
+        rootCommand.Add(endTimeOption);
 
         rootCommand.SetHandler((handlerOptionValue, parameter) =>
         {
@@ -62,11 +70,11 @@ class Program
             switch(handlerOptionValue)
             {
                 case "WhisperLocal":
-                    result = new WhisperLocalHandler().handler(parameter.file, parameter.model);
+                    result = new WhisperLocalHandler().handler(parameter.file, parameter.model, parameter.startTime, parameter.endTime);
                     CommonUtils.PrintSubtitle(result);
                     break;
                 case "WhisperApi":
-                    result = new WhisperApiHandler().handler(parameter.file, parameter.model);
+                    result = new WhisperApiHandler().handler(parameter.file, parameter.model, parameter.startTime, parameter.endTime);
                     CommonUtils.PrintSubtitle(result);
                     break;
                 case "N46Whisper":
@@ -96,7 +104,7 @@ class Program
             Console.ReadKey();
 #endif
 
-        }, handlerOption, new ParameterBinder(fileOption, modelOption, coorOption, confidenceOption, outputFilePathOption, subtitleOption, qsvAccelOption,localOCROption));
+        }, handlerOption, new ParameterBinder(fileOption, modelOption, coorOption, confidenceOption, outputFilePathOption, subtitleOption, qsvAccelOption,localOCROption, startTimeOption, endTimeOption));
 
         await rootCommand.InvokeAsync(args);
         

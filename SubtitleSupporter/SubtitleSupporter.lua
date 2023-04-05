@@ -1,4 +1,5 @@
 ﻿
+-- v0.6 support use selected time to run whisper 
 -- v0.5 add local easyOCR support
 -- v0.4 add get current subtitle function
 -- v0.3 add run whisper local function
@@ -15,7 +16,7 @@ script_version = "0.5"
 
 
 
-function runWhisperApi(subtitles)
+function runWhisperApi(subtitles, selected_lines, active_line)
 
 	local videoPath = aegisub.project_properties().video_file
 	if videoPath == nil or videoPath == "" then 
@@ -27,7 +28,9 @@ function runWhisperApi(subtitles)
 	local model = "whisper-1"
 	local button, controls = aegisub.dialog.display({
 		{class="label", label="please select a model:", x=0, y=0},
-		{class="dropdown", name="model", items={"whisper-1"}, value="whisper-1", x=0, y=1}
+		{class="dropdown", name="model", items={"whisper-1"}, value="whisper-1", x=0, y=1},
+		{class="label", label="please select the segment to run whisper:", x=0, y=2},
+		{class="dropdown", name="size", items={"full video","selected time"}, value="full video", x=0, y=3}
 	}, {})
 	if button == false then
 		--aegisub.debug.out("cancelled\n")
@@ -38,12 +41,31 @@ function runWhisperApi(subtitles)
 		if key == "model" then
 			model = val
 		end
+		if key == "size" then
+			size = val
+		end
 	end
 
+	local startTime = 0
+	local endTime = 0
+	local lastIndex = 0
+	if size ~= "full video" then 
+		for z, i in ipairs(selected_lines) do
+			lastIndex = i
+			local l = subtitles[i]		
+			if startTime == 0 or startTime > l.start_time then
+				startTime = l.start_time
+			end
+			if endTime < l.end_time then
+				endTime = l.end_time
+			end
+		end
+		lastIndex = lastIndex + 1
+	end
 	
 	local isError = false
 	--call api
-	local fh= io.popen(".\\automation\\SubtitleSupporter\\SubtitleSupporter.exe -h WhisperApi -m "..model.." -f \""..videoPath.."\"")
+	local fh= io.popen(".\\automation\\SubtitleSupporter\\SubtitleSupporter.exe -h WhisperApi -m "..model.." -f \""..videoPath.."\" -ss "..tostring(startTime).." -to "..tostring(endTime))
 	--aegisub.debug.out(model.."\n")
 	for l in fh:lines() do 
 		if string.sub(l,1,string.len("NO RESULT"))=="NO RESULT" then 
@@ -74,14 +96,26 @@ function runWhisperApi(subtitles)
 			line.end_time = v * 1000
 			line.text = t
 
+
 			-- append subtitle
-			subtitles[0] = line
+			if size == "full video" then 
+				subtitles[0] = line
+			else
+				subtitles.insert(lastIndex, line)
+				lastIndex = lastIndex + 1
+			end
 		end
+	end
+	-- adjust end time for selected time result since there looks like an issue in whisper that end time is not correct
+	if size ~= "full video" then 
+		local line = subtitles[lastIndex - 1]
+		line.end_time  = endTime
+		subtitles[lastIndex - 1] = line
 	end
 end
 
 
-function runWhisperLocal(subtitles)
+function runWhisperLocal(subtitles, selected_lines, active_line)
 
 	local videoPath = aegisub.project_properties().video_file
 	--aegisub.debug.out(videoPath.."\n")
@@ -92,9 +126,12 @@ function runWhisperLocal(subtitles)
 
 	--choose model
 	local model = "medium"
+	local size = "full"
 	local button, controls = aegisub.dialog.display({
 		{class="label", label="please select a model:", x=0, y=0},
-		{class="dropdown", name="model", items={"base","small","medium", "large"}, value="medium", x=0, y=1}
+		{class="dropdown", name="model", items={"base","small","medium", "large"}, value="medium", x=0, y=1},
+		{class="label", label="please select the segment to run whisper:", x=0, y=2},
+		{class="dropdown", name="size", items={"full video","selected time"}, value="full video", x=0, y=3}
 	}, {})
 	if button == false then
 		--aegisub.debug.out("cancelled\n")
@@ -105,12 +142,32 @@ function runWhisperLocal(subtitles)
 		if key == "model" then
 			model = val
 		end
+		if key == "size" then
+			size = val
+		end
+	end
+
+	local startTime = 0
+	local endTime = 0
+	local lastIndex = 0
+	if size ~= "full video" then 
+		for z, i in ipairs(selected_lines) do
+			lastIndex = i
+			local l = subtitles[i]		
+			if startTime == 0 or startTime > l.start_time then
+				startTime = l.start_time
+			end
+			if endTime < l.end_time then
+				endTime = l.end_time
+			end
+		end
+		lastIndex = lastIndex + 1
 	end
 
 	
 	local isError = false
 	--call api
-	local fh= io.popen(".\\automation\\SubtitleSupporter\\SubtitleSupporter.exe -h WhisperLocal -m "..model.." -f \""..videoPath.."\"")
+	local fh= io.popen(".\\automation\\SubtitleSupporter\\SubtitleSupporter.exe -h WhisperLocal -m "..model.." -f \""..videoPath.."\" -ss "..tostring(startTime).." -to "..tostring(endTime))
 	for l in fh:lines() do 
 		if string.sub(l,1,string.len("NO RESULT"))=="NO RESULT" then 
 			aegisub.debug.out("Cannot get result from whisper")
@@ -141,8 +198,19 @@ function runWhisperLocal(subtitles)
 			line.text = t
 
 			-- append subtitle
-			subtitles[0] = line
+			if size == "full video" then 
+				subtitles[0] = line
+			else
+				subtitles.insert(lastIndex, line)
+				lastIndex = lastIndex + 1
+			end
 		end
+	end
+	-- adjust end time for selected time result since there looks like an issue in whisper that end time is not correct
+	if size ~= "full video" then 
+		local line = subtitles[lastIndex - 1]
+		line.end_time  = endTime
+		subtitles[lastIndex - 1] = line
 	end
 end
 

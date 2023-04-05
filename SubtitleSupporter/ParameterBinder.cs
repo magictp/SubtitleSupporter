@@ -19,9 +19,11 @@ namespace SubtitleSupporter
         private readonly Option<string> _subtitleOption;
         private readonly Option<bool> _qsvAccelOption;
         private readonly Option<bool> _localOCROption;
+        private readonly Option<int> _startTimeption;
+        private readonly Option<int> _endTimeption;
 
 
-        public ParameterBinder(Option<string> fileOption, Option<string> modelOption, Option<string> coorOption, Option<double> confidenceOption, Option<string> outputFilePathOption, Option<string> subtitleOption, Option<bool> qsvAccelOption, Option<bool> localOCROption)
+        public ParameterBinder(Option<string> fileOption, Option<string> modelOption, Option<string> coorOption, Option<double> confidenceOption, Option<string> outputFilePathOption, Option<string> subtitleOption, Option<bool> qsvAccelOption, Option<bool> localOCROption, Option<int> startTimeption, Option<int> endTimeption)
         {
             _fileOption = fileOption;
             _modelOption = modelOption;
@@ -31,6 +33,8 @@ namespace SubtitleSupporter
             _subtitleOption = subtitleOption;
             _qsvAccelOption = qsvAccelOption;
             _localOCROption = localOCROption;
+            _startTimeption = startTimeption;
+            _endTimeption = endTimeption;
         }
 
         protected override ParameterModel GetBoundValue(BindingContext bindingContext) =>
@@ -43,7 +47,9 @@ namespace SubtitleSupporter
                 output = bindingContext.ParseResult.GetValueForOption(_outputFilePathOption),
                 subtitle = bindingContext.ParseResult.GetValueForOption(_subtitleOption),
                 qsvAccel = bindingContext.ParseResult.GetValueForOption(_qsvAccelOption),
-                localOCR = bindingContext.ParseResult.GetValueForOption(_localOCROption)
+                localOCR = bindingContext.ParseResult.GetValueForOption(_localOCROption),
+                startTime = bindingContext.ParseResult.GetValueForOption(_startTimeption),
+                endTime = bindingContext.ParseResult.GetValueForOption(_endTimeption)
             };
     }
 }
